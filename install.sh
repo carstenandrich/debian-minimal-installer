@@ -8,7 +8,7 @@
 DEBIAN_SUITE="sid"
 HOSTNAME="debian"
 HOSTNAME_FQDN=""
-DEV="/dev/sdb"
+DEV="/dev/null"
 # TODO: determine devices automatically
 DEV_ESP="${DEV}1"
 DEV_ROOT="${DEV}2"
