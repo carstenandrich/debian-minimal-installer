@@ -1,0 +1,3 @@
+/etc/initramfs/post-update.d/systemd-boot
+/etc/kernel/postinst.d/zz-systemd-boot
+/etc/kernel/postrm.d/zz-systemd-boot

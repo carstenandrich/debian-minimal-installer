@@ -2,3 +2,8 @@
 **/etc/ssh/ssh_host_*_key*
 **/root/.ssh/
 **/home/*/.ssh/
+
+# generated files
+/bootstrap.tar.gz
+/include.tar.gz
+/systemd-boot.deb
