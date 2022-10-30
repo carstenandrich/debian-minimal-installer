@@ -1,32 +1,31 @@
 #!/bin/sh -eux
 
-# apt install bubblewrap btrfs-progs cdebootstrap dosfstools fdisk
-
 ### vvv ADJUST THESE PARAMETERS vvv ###
 
-# configure
+# Debian suite to install (supported: bullseye, bookworm, or sid)
 DEBIAN_SUITE="sid"
+# apt mirror to use for bootstrapping and installation
+MIRROR="http://deb.debian.org/debian"
+MIRROR_SECURITY="http://security.debian.org/debian-security"
+# hostname and fully-qualified domain name (FQDN) of installed system
 HOSTNAME="debian"
 HOSTNAME_FQDN=""
+# block device to install on (**WARNING**: will be overwritten!)
 DEV="/dev/null"
-# TODO: determine devices automatically
-DEV_ESP="${DEV}1"
-DEV_ROOT="${DEV}2"
+# partition table in sfdisk syntax to create on $DEV, must contain:
+#   * EFI system partition (ESP) with type=uefi and name=esp
+#   * root partition with type=linux and name=esp
+PART_TABLE="label: gpt
+name=esp,  size=1G, type=uefi, bootable
+name=root, size=4G, type=linux"
 
-# pack include files with proper ownership
+# pack include files with proper ownership (git repo does not retain ownership)
 rm -f include.tar.gz
 tar -czf include.tar.gz --owner=root:0 --group=root:0 -C include etc root
 
-# create partition table (must have separate esp and root partitions)
-# FIXME: overwrites existing partition table without confirmation!!!
-sfdisk --lock $DEV <<-EOF
-	label: gpt
-
-	name=esp,  size=1G, type=uefi, bootable
-	name=root, size=4G, type=linux
-EOF
-
 ### ^^^ ADJUST THESE PARAMETERS ^^^ ###
+
+
 
 # register function for reliable cleanup when script exits (both regular exit
 # and premature termination due to errors, signals, etc.)
@@ -42,14 +41,33 @@ cleanup()
 	if [ -d root.mnt ] ; then
 		rmdir root.mnt
 	fi
+
+	rm -f include.tar.gz systemd-boot.deb
 }
 trap "cleanup" EXIT INT
+
+# check if $DEV already contains a partition table or filesystem signature,
+# because sfdisk overwrites existing partition tables without asking
+if [ -n "$(blkid --match-tag PTTYPE --match-tag TYPE --output value $DEV)" ] ; then
+	echo "ERROR: $DEV contains a partition table or filesystem signature"
+	echo "To \033[01;31m**IRREVERSIBLY OVERWRITE**\033[0m $DEV, run 'wipefs -a $DEV' to wipe all signatures, then retry"
+	exit 1
+fi
+
+# create partition table (wipe signatures to facilitate rerunning after failed
+# installation attempt; above check is sufficient due diligence)
+sfdisk --lock $DEV --wipe always --wipe-partitions always <<-EOF
+$PART_TABLE
+EOF
 
 # wait for udev to create device nodes
 udevadm settle
 
+# get device names of created partitions
+DEV_ESP=$(blkid --match-token PARTLABEL=esp --list-one --output device /dev/loop0*)
+DEV_ROOT=$(blkid --match-token PARTLABEL=root --list-one --output device /dev/loop0*)
+
 # create btrfs filesystem, mount it, and create subvolumes
-# FIXME: fails if $DEV_ROOT contains a partition signature
 mkfs.btrfs --label root $DEV_ROOT
 UUID_ROOT=$(blkid --match-tag UUID --output value $DEV_ROOT)
 mkdir root.mnt
@@ -69,7 +87,7 @@ mount $DEV_ESP root.mnt/@root/boot/efi
 if [ -f bootstrap.tar.gz ] ; then
 	tar -xf bootstrap.tar.gz -C root.mnt/@root
 else
-	cdebootstrap --flavour=minimal --include=usrmerge,whiptail $DEBIAN_SUITE root.mnt/@root "http://deb.debian.org/debian"
+	cdebootstrap --flavour=minimal --include=usrmerge,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
 	tar -czf bootstrap.tar.gz -C root.mnt/@root .
 fi
 
@@ -77,11 +95,11 @@ fi
 cat /etc/resolv.conf > root.mnt/@root/etc/resolv.conf
 
 # configure apt sources
-echo "deb http://deb.debian.org/debian $DEBIAN_SUITE main contrib non-free" > root.mnt/@root/etc/apt/sources.list
+echo "deb $MIRROR $DEBIAN_SUITE main contrib non-free" > root.mnt/@root/etc/apt/sources.list
 if [ $DEBIAN_SUITE != "sid" ] ; then
-	echo "deb http://security.debian.org/debian-security $DEBIAN_SUITE-security main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
-	echo "deb http://deb.debian.org/debian $DEBIAN_SUITE-updates main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
-	echo "deb http://deb.debian.org/debian $DEBIAN_SUITE-backports main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR_SECURITY $DEBIAN_SUITE-security main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR $DEBIAN_SUITE-updates main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR $DEBIAN_SUITE-backports main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
 fi
 
 # create /etc/hostname and /etc/hosts

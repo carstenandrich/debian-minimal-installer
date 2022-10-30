@@ -1,11 +1,8 @@
-# Minimalistic Debian Installer
+# Minimalistic Non-Interactive Debian Installer
 
 **If you're looking for a regular Debian installer, go to [Debian.org](https://www.debian.org/).**
 This repository addresses _advanced_ Debian users in need of a minimalistic
 and/or easily customizable, non-interactive installer.
-
-**WARNING: Overwrites selected install device's partition table without asking!
-Use with caution!!!**
 
 ## Features
 
@@ -29,8 +26,7 @@ cd debian-minimal-installer
 Install required dependencies:
 
 ```sh
-sudo apt-get install \
-	apt bubblewrap btrfs-progs cdebootstrap dosfstools fdisk
+sudo apt-get install bubblewrap btrfs-progs cdebootstrap dosfstools fdisk
 ```
 
 Configure Debian suite, install device, and desired partition table in
