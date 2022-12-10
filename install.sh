@@ -14,7 +14,7 @@ HOSTNAME_FQDN=""
 DEV="/dev/null"
 # partition table in sfdisk syntax to create on $DEV, must contain:
 #   * EFI system partition (ESP) with type=uefi and name=esp
-#   * root partition with type=linux and name=esp
+#   * root partition with type=linux and name=root
 PART_TABLE="label: gpt
 name=esp,  size=1G, type=uefi, bootable
 name=root, size=4G, type=linux"
@@ -64,8 +64,8 @@ EOF
 udevadm settle
 
 # get device names of created partitions
-DEV_ESP=$(blkid --match-token PARTLABEL=esp --list-one --output device /dev/loop0*)
-DEV_ROOT=$(blkid --match-token PARTLABEL=root --list-one --output device /dev/loop0*)
+DEV_ESP=$(blkid --match-token PARTLABEL=esp --list-one --output device $DEV*)
+DEV_ROOT=$(blkid --match-token PARTLABEL=root --list-one --output device $DEV*)
 
 # create btrfs filesystem, mount it, and create subvolumes
 mkfs.btrfs --label root $DEV_ROOT
