@@ -140,9 +140,9 @@ dpkg-deb -b systemd-boot/
 #
 # TODO: remove /dev/block when deprecating Bullseye
 # TODO: remove systemd-boot.deb when deprecating Bullseye
+# TODO: use bwrap --clearenv when bubblewrap 0.5 is widely available
 mkdir -p /var/cache/apt/archives
-bwrap \
-	--clearenv \
+env --ignore-environment bwrap \
 	--setenv DEBIAN_SUITE "$DEBIAN_SUITE" \
 	--setenv HOME "$HOME" \
 	--setenv PATH "/usr/sbin:/usr/bin:/sbin:/bin" \
@@ -161,13 +161,13 @@ bwrap \
 	--tmpfs /run \
 	--ro-bind /sys /sys \
 	--bind /sys/firmware/efi/efivars /sys/firmware/efi/efivars \
-	--perms 1777 --tmpfs /tmp \
-	--perms 500 --file 3 /tmp/install_chroot.sh \
-	--perms 644 --file 4 /tmp/systemd-boot.deb \
+	--tmpfs /tmp \
+	--file 3 /tmp/install_chroot.sh \
+	--file 4 /tmp/systemd-boot.deb \
 	--bind /var/cache/apt/archives /var/cache/apt/archives \
 	\
 	--unshare-pid --die-with-parent \
-	/tmp/install_chroot.sh \
+	/bin/sh -eux /tmp/install_chroot.sh \
 		3<install_chroot.sh \
 		4<systemd-boot.deb
 
