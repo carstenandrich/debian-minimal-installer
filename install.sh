@@ -87,7 +87,14 @@ mount $DEV_ESP root.mnt/@root/boot/efi
 if [ -f bootstrap.tar.gz ] ; then
 	tar -xf bootstrap.tar.gz -C root.mnt/@root
 else
-	cdebootstrap --flavour=minimal --include=usrmerge,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
+	if [ $DEBIAN_SUITE = "bullseye" ] ; then
+		cdebootstrap --flavour=minimal --include=usrmerge,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
+	else
+		cdebootstrap --flavour=minimal --include=usrmerge,usr-is-merged,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
+		# remove usrmerge and its dependencies after /usr has been merged
+		# FIXME: will break on perl major version upgrade
+		dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.36 libfile-find-rule-perl libnumber-compare-perl libperl5.36 libtext-glob-perl
+	fi
 	tar -czf bootstrap.tar.gz -C root.mnt/@root .
 fi
 
