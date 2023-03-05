@@ -1,13 +1,13 @@
 Package: systemd-boot
 Source: systemd
-Version: 251.6-1
+Version: 247.3
 Architecture: amd64
 Maintainer: Carsten Andrich
-Depends: systemd (>= 247.3), systemd (<< 251.2-3~)
+Depends: systemd (>= 247.3), systemd (<< 248)
 Recommends: efibootmgr
 Section: admin
 Priority: optional
-Homepage: https://github.com/carstenandrich/debian-minimal-installer/tree/main/systemd-boot.deb.d
+Homepage: https://github.com/carstenandrich/debian-minimal-installer/tree/main/systemd-boot
 Description: simple UEFI boot manager - automatic update hooks
  systemd-boot (short: sd-boot) is a simple UEFI boot manager. It provides a
  textual menu to select the entry to boot and an editor for the kernel command
