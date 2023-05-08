@@ -7,7 +7,7 @@ and/or easily customizable, non-interactive installer.
 ## Features
 
   * Non-interactive install of minimalistic Debian system in < 3 minutes
-  * Supports current Debian stable (Bullseye) and unstable (Sid) on x86_64
+  * Supports current Debian stable (Bookworm) and unstable (Sid) on x86_64
   * Installs systemd-boot as minimal UEFI boot loader (BIOS/GRUB not supported)
   * Creates Btrfs subvolumes for separate snapshotting of root filesystem and
     home directories

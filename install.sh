@@ -2,7 +2,7 @@
 
 ### vvv ADJUST THESE PARAMETERS vvv ###
 
-# Debian suite to install (supported: bullseye, bookworm, or sid)
+# Debian suite to install (supported: bookworm or sid)
 DEBIAN_SUITE="sid"
 # apt mirror to use for bootstrapping and installation
 MIRROR="http://deb.debian.org/debian"
@@ -42,7 +42,7 @@ cleanup()
 		rmdir root.mnt
 	fi
 
-	rm -f include.tar.gz systemd-boot.deb
+	rm -f include.tar.gz
 }
 trap "cleanup" EXIT INT
 
@@ -87,14 +87,11 @@ mount $DEV_ESP root.mnt/@root/boot/efi
 if [ -f bootstrap.tar.gz ] ; then
 	tar -xf bootstrap.tar.gz -C root.mnt/@root
 else
-	if [ $DEBIAN_SUITE = "bullseye" ] ; then
-		cdebootstrap --flavour=minimal --include=usrmerge,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
-	else
-		cdebootstrap --flavour=minimal --include=usrmerge,usr-is-merged,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
-		# remove usrmerge and its dependencies after /usr has been merged
-		# FIXME: will break on perl major version upgrade
-		dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.36 libfile-find-rule-perl libnumber-compare-perl libperl5.36 libtext-glob-perl
-	fi
+	cdebootstrap --flavour=minimal --include=usrmerge,usr-is-merged,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
+	# remove usrmerge and its dependencies after /usr has been merged
+	# FIXME: will break on perl major version upgrade
+	dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.36 libfile-find-rule-perl libnumber-compare-perl libperl5.36 libtext-glob-perl
+
 	tar -czf bootstrap.tar.gz -C root.mnt/@root .
 fi
 
@@ -102,11 +99,11 @@ fi
 cat /etc/resolv.conf > root.mnt/@root/etc/resolv.conf
 
 # configure apt sources
-echo "deb $MIRROR $DEBIAN_SUITE main contrib non-free" > root.mnt/@root/etc/apt/sources.list
+echo "deb $MIRROR $DEBIAN_SUITE main contrib non-free non-free-firmware" > root.mnt/@root/etc/apt/sources.list
 if [ $DEBIAN_SUITE != "sid" ] ; then
-	echo "deb $MIRROR_SECURITY $DEBIAN_SUITE-security main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
-	echo "deb $MIRROR $DEBIAN_SUITE-updates main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
-	echo "deb $MIRROR $DEBIAN_SUITE-backports main contrib non-free" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR_SECURITY $DEBIAN_SUITE-security main contrib non-free non-free-firmware" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR $DEBIAN_SUITE-updates main contrib non-free non-free-firmware" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR $DEBIAN_SUITE-backports main contrib non-free non-free-firmware" >> root.mnt/@root/etc/apt/sources.list
 fi
 
 # create /etc/hostname and /etc/hosts
@@ -134,10 +131,6 @@ echo "root=UUID=$UUID_ROOT ro" > root.mnt/@root/etc/kernel/cmdline
 # untar includes
 tar -xf include.tar.gz -C root.mnt/@root
 
-# build systemd-boot package (required for automatic updates on Bullseye)
-# TODO: remove when deprecating Bullseye
-dpkg-deb -b systemd-boot/
-
 # call chroot build script via bubblewrap:
 #   * clears environment variables (prevents locale issues)
 #   * binds /var/cache/apt/archives into chroot to cache downloaded .deb files
@@ -145,8 +138,6 @@ dpkg-deb -b systemd-boot/
 #     populated /dev and /proc mounts)
 #   * cleans up reliably (unmount everything and kill any remaining processes)
 #
-# TODO: remove /dev/block when deprecating Bullseye
-# TODO: remove systemd-boot.deb when deprecating Bullseye
 # TODO: use bwrap --clearenv when bubblewrap 0.5 is widely available
 mkdir -p /var/cache/apt/archives
 env --ignore-environment bwrap \
@@ -159,7 +150,6 @@ env --ignore-environment bwrap \
 	--bind root.mnt/@root / \
 	--bind root.mnt/@home /home \
 	--dev /dev \
-	--ro-bind /dev/block /dev/block \
 	--dev-bind $DEV $DEV \
 	--dev-bind $DEV_ROOT $DEV_ROOT \
 	--dev-bind $DEV_ESP $DEV_ESP \
@@ -170,13 +160,11 @@ env --ignore-environment bwrap \
 	--bind /sys/firmware/efi/efivars /sys/firmware/efi/efivars \
 	--tmpfs /tmp \
 	--file 3 /tmp/install_chroot.sh \
-	--file 4 /tmp/systemd-boot.deb \
 	--bind /var/cache/apt/archives /var/cache/apt/archives \
 	\
 	--unshare-pid --die-with-parent \
 	/bin/sh -eux /tmp/install_chroot.sh \
-		3<install_chroot.sh \
-		4<systemd-boot.deb
+		3<install_chroot.sh
 
 # remove chroot helper that disables service invocation
 dpkg --root=root.mnt/@root --purge cdebootstrap-helper-rc.d
