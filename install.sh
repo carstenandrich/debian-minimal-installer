@@ -81,7 +81,7 @@ mkdir -p root.mnt/@root/mnt/root
 mkfs.fat -F 32 $DEV_ESP
 UUID_ESP=$(blkid --match-tag UUID --output value $DEV_ESP)
 mkdir -p root.mnt/@root/boot/efi
-mount $DEV_ESP root.mnt/@root/boot/efi
+mount -o umask=0077 $DEV_ESP root.mnt/@root/boot/efi
 
 # bootstrap system, caching bootstrap results to accelerate potential rebuilds
 if [ -f bootstrap.tar.gz ] ; then
@@ -121,7 +121,7 @@ cat >root.mnt/@root/etc/fstab <<-EOF
 	UUID="$UUID_ROOT" /         btrfs relatime,ssd              0 0
 	UUID="$UUID_ROOT" /home     btrfs relatime,ssd,subvol=@home 0 0
 	UUID="$UUID_ROOT" /mnt/root btrfs relatime,ssd,subvolid=5   0 0
-	UUID="$UUID_ESP"                            /boot/efi vfat  relatime                  0 0
+	UUID="$UUID_ESP"                            /boot/efi vfat  relatime,umask=0077       0 0
 	tmpfs                                       /tmp      tmpfs mode=1777                 0 0
 EOF
 
