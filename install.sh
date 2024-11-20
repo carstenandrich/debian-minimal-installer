@@ -31,12 +31,12 @@ tar -czf include.tar.gz --owner=root:0 --group=root:0 -C include etc root
 # and premature termination due to errors, signals, etc.)
 cleanup()
 {
-        # unmount bind mounts created by build process
-        for mount in root.mnt/@root/boot/efi root.mnt ; do
-                if mountpoint -q "$mount" ; then
-                        umount "$mount"
-                fi
-        done
+	# unmount bind mounts created by build process
+	for mount in root.mnt/@root/boot/efi root.mnt ; do
+		if mountpoint -q "$mount" ; then
+			umount "$mount"
+		fi
+	done
 
 	if [ -d root.mnt ] ; then
 		rmdir root.mnt
@@ -103,24 +103,24 @@ else
 fi
 
 # update resolv.conf (may have changed since bootstrapping)
-cat /etc/resolv.conf > root.mnt/@root/etc/resolv.conf
+cat /etc/resolv.conf >root.mnt/@root/etc/resolv.conf
 
 # configure apt sources
-echo "deb $MIRROR $DEBIAN_SUITE main contrib non-free non-free-firmware" > root.mnt/@root/etc/apt/sources.list
+echo "deb $MIRROR $DEBIAN_SUITE main contrib non-free non-free-firmware" >root.mnt/@root/etc/apt/sources.list
 if [ $DEBIAN_SUITE != "sid" ] ; then
-	echo "deb $MIRROR_SECURITY $DEBIAN_SUITE-security main contrib non-free non-free-firmware" >> root.mnt/@root/etc/apt/sources.list
-	echo "deb $MIRROR $DEBIAN_SUITE-updates main contrib non-free non-free-firmware" >> root.mnt/@root/etc/apt/sources.list
-	echo "deb $MIRROR $DEBIAN_SUITE-backports main contrib non-free non-free-firmware" >> root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR_SECURITY $DEBIAN_SUITE-security main contrib non-free non-free-firmware" >>root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR $DEBIAN_SUITE-updates main contrib non-free non-free-firmware" >>root.mnt/@root/etc/apt/sources.list
+	echo "deb $MIRROR $DEBIAN_SUITE-backports main contrib non-free non-free-firmware" >>root.mnt/@root/etc/apt/sources.list
 fi
 
 # create /etc/hostname and /etc/hosts
-echo "127.0.0.1 localhost" > root.mnt/@root/etc/hosts
+echo "127.0.0.1 localhost" >root.mnt/@root/etc/hosts
 if [ -n "$HOSTNAME_FQDN" ] ; then
-	echo "$HOSTNAME_FQDN" > root.mnt/@root/etc/hostname
-	echo "127.0.1.1 $HOSTNAME_FQDN $HOSTNAME" >> root.mnt/@root/etc/hosts
+	echo "$HOSTNAME_FQDN" >root.mnt/@root/etc/hostname
+	echo "127.0.1.1 $HOSTNAME_FQDN $HOSTNAME" >>root.mnt/@root/etc/hosts
 else
-	echo "$HOSTNAME" > root.mnt/@root/etc/hostname
-	echo "127.0.1.1 $HOSTNAME" >> root.mnt/@root/etc/hosts
+	echo "$HOSTNAME" >root.mnt/@root/etc/hostname
+	echo "127.0.1.1 $HOSTNAME" >>root.mnt/@root/etc/hosts
 fi
 
 # create /etc/fstab
@@ -133,7 +133,7 @@ cat >root.mnt/@root/etc/fstab <<-EOF
 EOF
 
 # create /etc/kernel/cmdline
-echo "root=UUID=$UUID_ROOT ro" > root.mnt/@root/etc/kernel/cmdline
+echo "root=UUID=$UUID_ROOT ro" >root.mnt/@root/etc/kernel/cmdline
 
 # untar includes
 tar -xf include.tar.gz -C root.mnt/@root

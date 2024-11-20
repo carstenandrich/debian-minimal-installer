@@ -23,8 +23,8 @@ update-locale LANG=C.UTF-8
 # contents of /etc/resolv.conf (expected to be a usable resolv.conf provided
 # by the host)
 mkdir -p /run/systemd/resolve
-cat /etc/resolv.conf > /run/systemd/resolve/resolv.conf
-cat /etc/resolv.conf > /run/systemd/resolve/stub-resolv.conf
+cat /etc/resolv.conf >/run/systemd/resolve/resolv.conf
+cat /etc/resolv.conf >/run/systemd/resolve/stub-resolv.conf
 
 # install all packages except kernel (avoids multiple initramfs rebuilds)
 apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install \
@@ -39,13 +39,19 @@ apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef
 	iputils-ping iputils-tracepath netcat-openbsd openssh-client openssh-server
 
 # enable systemd services not enabled by default
-systemctl enable systemd-boot-update.service
-systemctl enable systemd-networkd.service
+if [ -f /usr/lib/systemd/system/systemd-boot-update.service ] ; then
+	systemctl enable systemd-boot-update.service
+fi
+if [ -f /usr/lib/systemd/system/systemd-networkd.service ] ; then
+	systemctl enable systemd-networkd.service
+fi
 
 # disable resuming (emits warning during initramfs generation and may cause
 # boot delay when erroneously waiting for swap partition)
 # https://manpages.debian.org/unstable/initramfs-tools-core/initramfs-tools.7.en.html#resume
-echo "RESUME=none" > /etc/initramfs-tools/conf.d/resume
+if [ -d /etc/initramfs-tools/conf.d ] ; then
+	echo "RESUME=none" >/etc/initramfs-tools/conf.d/resume
+fi
 
 # configure initramfs generation before installing kernel
 # (use local keymap in initramfs)
@@ -64,9 +70,9 @@ EOF
 apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install \
 	linux-image-amd64
 
-# enable persistent systemd journal
+# enable persistent systemd journal (implies `chattr +C /var/log/journal`)
 mkdir -p /var/log/journal
 systemd-tmpfiles --create --prefix /var/log/journal
 
-# set root password "root" (generate via `openssl passwd -1 -salt ""`)
-usermod --password '$1$$oCLuEVgI1iAqOA8pwkzAg1' root
+# set root password "root"
+echo -n "root" | passwd -s root
