@@ -10,7 +10,8 @@ and/or easily customizable, non-interactive installer.
   * Supports current Debian stable (Bookworm) and unstable (Sid) on x86_64
   * Installs systemd-boot as minimal UEFI boot loader (BIOS/GRUB not supported)
   * Creates Btrfs subvolumes for separate snapshotting of root filesystem and
-    home directories
+    home directories (root filesystem snapshots are created automatically on
+    apt/dpkg invocation, limited to one snapshot per hour)
   * Easily customizable (two shell scripts)
   * Usable from [minimal live system](https://github.com/carstenandrich/debian-minimal-live)
 
