@@ -115,11 +115,10 @@ fi
 
 # create /etc/hostname and /etc/hosts
 echo "127.0.0.1 localhost" >root.mnt/@root/etc/hosts
+echo "$HOSTNAME" >root.mnt/@root/etc/hostname
 if [ -n "$HOSTNAME_FQDN" ] ; then
-	echo "$HOSTNAME_FQDN" >root.mnt/@root/etc/hostname
 	echo "127.0.1.1 $HOSTNAME_FQDN $HOSTNAME" >>root.mnt/@root/etc/hosts
 else
-	echo "$HOSTNAME" >root.mnt/@root/etc/hostname
 	echo "127.0.1.1 $HOSTNAME" >>root.mnt/@root/etc/hosts
 fi
 
