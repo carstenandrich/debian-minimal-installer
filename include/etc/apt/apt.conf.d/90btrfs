@@ -1,1 +1,1 @@
-DPkg::Pre-Install-Pkgs { "snap=/mnt/root/.snapshots/root/@$(date --utc +%Y-%m-%dT%H0000Z)_dpkg ; if [ ! -e $snap ] ; then btrfs subvol snapshot -r /mnt/root/@root $snap ; fi"; };
+DPkg::Pre-Install-Pkgs { "snap=/mnt/root/.snapshots/root/@$(date --utc +%Y-%m-%dT%H0000Z)_dpkg ; if [ -d /mnt/root/.snapshots/root -a ! -e $snap ] ; then btrfs subvol snapshot -r /mnt/root/@root $snap ; fi"; };

@@ -92,10 +92,10 @@ else
 
 	# remove usrmerge and its dependencies after /usr has been merged
 	if [ $DEBIAN_SUITE = "bookworm" ] ; then
-		dpkg --root=bootstrap --purge usrmerge perl perl-modules-5.36 libfile-find-rule-perl libnumber-compare-perl libperl5.36 libtext-glob-perl
+		dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.36 libfile-find-rule-perl libnumber-compare-perl libperl5.36 libtext-glob-perl
 	else
 		# FIXME: will break on perl major version upgrade
-		dpkg --root=bootstrap --purge usrmerge perl perl-modules-5.40 libfile-find-rule-perl libnumber-compare-perl libperl5.40 libtext-glob-perl
+		dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.40 libfile-find-rule-perl libnumber-compare-perl libperl5.40 libtext-glob-perl
 	fi
 
 	# cache bootstrapping result

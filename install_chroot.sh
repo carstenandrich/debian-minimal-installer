@@ -76,4 +76,9 @@ mkdir -p /var/log/journal
 systemd-tmpfiles --create --prefix /var/log/journal
 
 # set root password "root"
-echo -n "root" | passwd -s root
+# TODO: remove fallback when deprecating Bookworm
+if [ $DEBIAN_SUITE = "bookworm" ] ; then
+	usermod --password '$1$$oCLuEVgI1iAqOA8pwkzAg1' root
+else
+	echo -n "root" | passwd -s root
+fi
