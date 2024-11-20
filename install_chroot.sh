@@ -67,9 +67,10 @@ cat >/boot/efi/loader/loader.conf <<-EOF
 EOF
 
 # install kernel and memtest86+
+# TODO: add memtest86+ once dependency on grub-common is removed (see Debian Bug #1087942)
 # FIXME: automatic memtest86+ systemd-boot entry creation only on Trixie/Sid (see Debian Bug #1081704)
 apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install \
-	linux-image-amd64 memtest86+
+	linux-image-amd64
 
 # enable persistent systemd journal (implies `chattr +C /var/log/journal`)
 mkdir -p /var/log/journal
