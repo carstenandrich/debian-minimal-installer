@@ -21,7 +21,7 @@ update-locale LANG=C.UTF-8
 # the chroot, systemd-resolved does not run and these files are missing,
 # breaking DNS resolution. as a workaround, substitute these files with the
 # contents of /etc/resolv.conf (expected to be a usable resolv.conf provided
-# by the host)
+# by the host).
 mkdir -p /run/systemd/resolve
 cat /etc/resolv.conf >/run/systemd/resolve/resolv.conf
 cat /etc/resolv.conf >/run/systemd/resolve/stub-resolv.conf
@@ -76,10 +76,7 @@ apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef
 mkdir -p /var/log/journal
 systemd-tmpfiles --create --prefix /var/log/journal
 
-# set root password "root"
-# TODO: remove fallback when deprecating Bookworm
-if [ $DEBIAN_SUITE = "bookworm" ] ; then
-	usermod --password '$1$$oCLuEVgI1iAqOA8pwkzAg1' root
-else
-	echo -n "root" | passwd -s root
-fi
+# permit local logins without password
+# NOTE: sshd refuses login without password unless PermitEmptyPasswords is set:
+#       https://manpages.debian.org/unstable/openssh-server/sshd_config.5.en.html#PermitEmptyPasswords
+sed -i 's/^root:[^:]*:/root::/' /etc/shadow

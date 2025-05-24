@@ -2,7 +2,7 @@
 
 ### vvv ADJUST THESE PARAMETERS vvv ###
 
-# Debian suite to install (supported: bookworm or sid)
+# Debian suite to install (supported: bookworm, trixie, or sid)
 DEBIAN_SUITE="sid"
 # apt mirror to use for bootstrapping and installation
 MIRROR="http://deb.debian.org/debian"
@@ -87,16 +87,8 @@ mount -o umask=0077 $DEV_ESP root.mnt/@root/boot/efi
 if [ -f bootstrap.tar.gz ] ; then
 	tar -xf bootstrap.tar.gz -C root.mnt/@root
 else
-	cdebootstrap --flavour=minimal --include=usrmerge,usr-is-merged,whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
+	cdebootstrap --flavour=minimal --include=whiptail $DEBIAN_SUITE root.mnt/@root "$MIRROR"
 	rm -rf root.mnt/@root/run/*
-
-	# remove usrmerge and its dependencies after /usr has been merged
-	if [ $DEBIAN_SUITE = "bookworm" ] ; then
-		dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.36 libfile-find-rule-perl libnumber-compare-perl libperl5.36 libtext-glob-perl
-	else
-		# FIXME: will break on perl major version upgrade
-		dpkg --root=root.mnt/@root --purge usrmerge perl perl-modules-5.40 libfile-find-rule-perl libnumber-compare-perl libperl5.40 libtext-glob-perl
-	fi
 
 	# cache bootstrapping result
 	tar -czf bootstrap.tar.gz -C root.mnt/@root .
@@ -106,11 +98,37 @@ fi
 cat /etc/resolv.conf >root.mnt/@root/etc/resolv.conf
 
 # configure apt sources
-echo "deb $MIRROR $DEBIAN_SUITE main contrib non-free non-free-firmware" >root.mnt/@root/etc/apt/sources.list
-if [ $DEBIAN_SUITE != "sid" ] ; then
-	echo "deb $MIRROR_SECURITY $DEBIAN_SUITE-security main contrib non-free non-free-firmware" >>root.mnt/@root/etc/apt/sources.list
-	echo "deb $MIRROR $DEBIAN_SUITE-updates main contrib non-free non-free-firmware" >>root.mnt/@root/etc/apt/sources.list
-	echo "deb $MIRROR $DEBIAN_SUITE-backports main contrib non-free non-free-firmware" >>root.mnt/@root/etc/apt/sources.list
+rm -f root.mnt/@root/etc/apt/sources.list
+if [ "$DEBIAN_SUITE" = "sid" ] ; then
+	cat >root.mnt/@root/etc/apt/sources.list.d/debian.sources <<-EOF
+		Types: deb
+		URIs: http://deb.debian.org/debian/
+		Suites: sid
+		Components: main contrib non-free non-free-firmware
+		Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+	EOF
+# TODO: remove fallback when deprecating bookworm
+elif [ "$DEBIAN_SUITE" = "bookworm" ] ; then
+	cat >root.mnt/@root/etc/apt/sources.list <<-EOF
+		deb http://deb.debian.org/debian ${DEBIAN_SUITE} main contrib non-free non-free-firmware
+		deb http://security.debian.org/debian-security ${DEBIAN_SUITE}-security main contrib non-free non-free-firmware
+		deb http://deb.debian.org/debian ${DEBIAN_SUITE}-updates main contrib non-free non-free-firmware
+		deb http://deb.debian.org/debian ${DEBIAN_SUITE}-backports main contrib non-free non-free-firmware
+	EOF
+else
+	cat >root.mnt/@root/etc/apt/sources.list.d/debian.sources <<-EOF
+		Types: deb
+		URIs: http://deb.debian.org/debian/
+		Suites: ${DEBIAN_SUITE} ${DEBIAN_SUITE}-updates ${DEBIAN_SUITE}-backports
+		Components: main contrib non-free non-free-firmware
+		Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+		Types: deb
+		URIs: http://security.debian.org/debian-security/
+		Suites: ${DEBIAN_SUITE}-security
+		Components: main contrib non-free non-free-firmware
+		Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+	EOF
 fi
 
 # create /etc/hostname and /etc/hosts
