@@ -18,6 +18,8 @@ DEV="/dev/null"
 PART_TABLE="label: gpt
 name=esp,  size=1G, type=uefi, bootable
 name=root, size=4G, type=linux"
+# optionally encrypt root partition with LUKS (0=no 1=yes)
+ENCRYPT_ROOT="1"
 
 # pack include files with proper ownership (git repo does not retain ownership)
 rm -f include.tar.gz
@@ -37,6 +39,11 @@ cleanup()
 			umount "$mount"
 		fi
 	done
+
+	# close LUKS partition if open
+	if [ -n "$UUID_LUKS" -a -b "/dev/mapper/luks-$UUID_LUKS" ] ; then
+		cryptsetup close luks-$UUID_LUKS
+	fi
 
 	if [ -d root.mnt ] ; then
 		rmdir root.mnt
@@ -66,6 +73,16 @@ udevadm settle
 # get device names of created partitions
 DEV_ESP=$(blkid --match-token PARTLABEL=esp --list-one --output device $DEV*)
 DEV_ROOT=$(blkid --match-token PARTLABEL=root --list-one --output device $DEV*)
+
+# optionally encrypt root partition
+if [ "$ENCRYPT_ROOT" -eq 1 ] ; then
+	# initialize $DEV_ROOT as LUKS partition
+	DEV_LUKS=$DEV_ROOT
+	cryptsetup luksFormat --batch-mode $DEV_LUKS
+	UUID_LUKS=$(blkid --match-tag UUID --output value $DEV_LUKS)
+	cryptsetup open $DEV_LUKS luks-$UUID_LUKS
+	DEV_ROOT=/dev/mapper/luks-$UUID_LUKS
+fi
 
 # create btrfs filesystem, mount it, and create subvolumes
 mkfs.btrfs --label root $DEV_ROOT
@@ -149,6 +166,14 @@ cat >root.mnt/@root/etc/fstab <<-EOF
 	tmpfs                                       /tmp      tmpfs mode=1777                 0 0
 EOF
 
+# create /etc/crypttab if encrypting root
+if [ "$ENCRYPT_ROOT" -eq 1 ] ; then
+	cat >root.mnt/@root/etc/crypttab <<-EOF
+		# <target name> <source device> <key file> <options>
+		luks-$UUID_LUKS UUID=$UUID_LUKS none luks,discard
+	EOF
+fi
+
 # create /etc/kernel/cmdline
 echo "root=UUID=$UUID_ROOT ro" >root.mnt/@root/etc/kernel/cmdline
 
@@ -175,8 +200,10 @@ env --ignore-environment bwrap \
 	--bind root.mnt/@home /home \
 	--dev /dev \
 	--dev-bind $DEV $DEV \
-	--dev-bind $DEV_ROOT $DEV_ROOT \
 	--dev-bind $DEV_ESP $DEV_ESP \
+	--dev-bind ${DEV_LUKS:-/dev/null} ${DEV_LUKS:-/dev/null} \
+	--dev-bind $DEV_ROOT $DEV_ROOT \
+	--dev-bind /dev/mapper/control /dev/mapper/control \
 	--bind root.mnt /mnt/root \
 	--proc /proc \
 	--tmpfs /run \

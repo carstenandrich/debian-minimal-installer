@@ -38,6 +38,11 @@ apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef
 	btrfs-progs dosfstools fdisk \
 	iputils-ping iputils-tracepath netcat-openbsd openssh-client openssh-server
 
+# install cryptsetup-initramfs if required
+if [ -s /etc/crypttab ] ; then
+	apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install cryptsetup-initramfs
+fi
+
 # enable systemd services not enabled by default
 if [ -f /usr/lib/systemd/system/systemd-boot-update.service ] ; then
 	systemctl enable systemd-boot-update.service
