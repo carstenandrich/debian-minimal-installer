@@ -35,7 +35,7 @@ apt-get --assume-yes --no-install-recommends -o Dpkg::Options::="--force-confdef
 	\
 	bash-completion busybox console-setup keyboard-configuration usb-modeswitch \
 	htop less man-db manpages \
-	btrfs-progs dosfstools fdisk \
+	btrfs-progs dosfstools efibootmgr fdisk \
 	iputils-ping iputils-tracepath netcat-openbsd openssh-client openssh-server
 
 # install cryptsetup-initramfs if required
