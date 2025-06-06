@@ -19,7 +19,7 @@ PART_TABLE="label: gpt
 name=esp,  size=1G, type=uefi, bootable
 name=root, size=4G, type=linux"
 # optionally encrypt root partition with LUKS (0=no 1=yes)
-ENCRYPT_ROOT="1"
+ENCRYPT_ROOT="0"
 
 # pack include files with proper ownership (git repo does not retain ownership)
 rm -f include.tar.gz
